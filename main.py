@@ -23,7 +23,7 @@ class HU:
     def plot_overlay(cls, ax: plt.Axes, series: list[list[float]], title: str) -> None:
         for values in series:
             x = range(len(values))
-            ax.plot(x, values, color="tab:blue", alpha=0.15, linewidth=0.8)
+            ax.plot(x, values, color="tab:blue", alpha=0.15, linewidth=5)
         ax.set_title(title)
         ax.set_xlabel("Index")
         ax.set_ylabel("8-bit brightness")
