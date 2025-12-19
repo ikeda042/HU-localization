@@ -107,6 +107,32 @@ class HU:
         ax.grid(True, alpha=0.2)
 
     @classmethod
+    def _split_series_by_center_minima(
+        cls,
+        series: list[list[float]],
+        degree: int,
+        center_ratio: float,
+    ) -> tuple[list[list[float]], list[list[float]]]:
+        within = []
+        outside = []
+        for values in series:
+            if len(values) <= degree:
+                continue
+            x = np.arange(len(values))
+            coeffs = np.polyfit(x, values, degree)
+            _, x_minima = cls._polyfit_extrema_x(coeffs, 0, len(values) - 1)
+            if x_minima.size == 0:
+                outside.append(values)
+                continue
+            center = (len(values) - 1) / 2.0
+            threshold = center_ratio * (len(values) - 1)
+            if np.any(np.abs(x_minima - center) <= threshold):
+                within.append(values)
+            else:
+                outside.append(values)
+        return within, outside
+
+    @classmethod
     def run(
         cls,
         data_paths: tuple[str, ...] = ("data1.csv", "data2.csv"),
@@ -146,15 +172,34 @@ class HU:
         data_paths: tuple[str, ...] = ("data1.csv", "data2.csv"),
         output_path: str = "overlay_polyfit_extrema.png",
         degree: int = 4,
+        center_ratio: float = 0.15,
     ) -> None:
         series_list = [cls.read_even_lines(path) for path in data_paths]
-        fig_height = 4 * len(data_paths)
-        fig, axes = plt.subplots(nrows=len(data_paths), ncols=1, figsize=(10, fig_height))
-        if len(data_paths) == 1:
-            axes = [axes]
-        for ax, series, title in zip(axes, series_list, data_paths):
-            plot_title = f"{title} (poly{degree} extrema)"
-            cls.plot_polyfit_extrema_overlay(ax, series, plot_title, degree=degree)
+        nrows = len(data_paths)
+        fig_height = 4 * nrows
+        fig, axes = plt.subplots(nrows=nrows, ncols=2, figsize=(12, fig_height))
+        axes = np.atleast_2d(axes)
+        percent = int(center_ratio * 100)
+        for row_index, (series, title) in enumerate(zip(series_list, data_paths)):
+            within, outside = cls._split_series_by_center_minima(
+                series,
+                degree=degree,
+                center_ratio=center_ratio,
+            )
+            within_title = f"{title} (minima within center ±{percent}%)"
+            outside_title = f"{title} (minima outside center ±{percent}%)"
+            cls.plot_polyfit_extrema_overlay(
+                axes[row_index, 0],
+                within,
+                within_title,
+                degree=degree,
+            )
+            cls.plot_polyfit_extrema_overlay(
+                axes[row_index, 1],
+                outside,
+                outside_title,
+                degree=degree,
+            )
         fig.tight_layout()
         plt.savefig(output_path, dpi=300)
 
