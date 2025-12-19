@@ -51,6 +51,54 @@ class HU:
         ax.grid(True, alpha=0.2)
 
     @classmethod
+    def _polyfit_extrema_x(
+        cls,
+        coeffs: np.ndarray,
+        x_min: float,
+        x_max: float,
+        tol: float = 1e-6,
+    ) -> np.ndarray:
+        deriv = np.polyder(coeffs)
+        roots = np.roots(deriv)
+        real_mask = np.isclose(roots.imag, 0.0, atol=1e-7)
+        real_roots = roots[real_mask].real
+        real_roots = real_roots[(real_roots >= x_min) & (real_roots <= x_max)]
+        if real_roots.size == 0:
+            return real_roots
+        real_roots.sort()
+        second = np.polyder(deriv)
+        extrema = []
+        for root in real_roots:
+            if abs(np.polyval(second, root)) <= tol:
+                continue
+            extrema.append(root)
+        return np.array(extrema)
+
+    @classmethod
+    def plot_polyfit_extrema_overlay(
+        cls,
+        ax: plt.Axes,
+        series: list[list[float]],
+        title: str,
+        degree: int = 4,
+    ) -> None:
+        for values in series:
+            if len(values) <= degree:
+                continue
+            x = np.arange(len(values))
+            coeffs = np.polyfit(x, values, degree)
+            y_fit = np.polyval(coeffs, x)
+            ax.plot(x, y_fit, color="tab:orange", alpha=0.35, linewidth=1)
+            x_extrema = cls._polyfit_extrema_x(coeffs, 0, len(values) - 1)
+            if x_extrema.size:
+                y_extrema = np.polyval(coeffs, x_extrema)
+                ax.scatter(x_extrema, y_extrema, color="red", s=20, alpha=0.85, zorder=3)
+        ax.set_title(title)
+        ax.set_xlabel("Index")
+        ax.set_ylabel("8-bit brightness (polyfit)")
+        ax.grid(True, alpha=0.2)
+
+    @classmethod
     def run(
         cls,
         data_paths: tuple[str, ...] = ("data1.csv", "data2.csv"),
@@ -84,10 +132,29 @@ class HU:
         fig.tight_layout()
         plt.savefig(output_path, dpi=300)
 
+    @classmethod
+    def run_polyfit_extrema_overlay(
+        cls,
+        data_paths: tuple[str, ...] = ("data1.csv", "data2.csv"),
+        output_path: str = "overlay_polyfit_extrema.png",
+        degree: int = 4,
+    ) -> None:
+        series_list = [cls.read_even_lines(path) for path in data_paths]
+        fig_height = 4 * len(data_paths)
+        fig, axes = plt.subplots(nrows=len(data_paths), ncols=1, figsize=(10, fig_height))
+        if len(data_paths) == 1:
+            axes = [axes]
+        for ax, series, title in zip(axes, series_list, data_paths):
+            plot_title = f"{title} (poly{degree} extrema)"
+            cls.plot_polyfit_extrema_overlay(ax, series, plot_title, degree=degree)
+        fig.tight_layout()
+        plt.savefig(output_path, dpi=300)
+
 
 def main() -> None:
     HU.run()
     HU.run_polyfit_overlay(degree=4)
+    HU.run_polyfit_extrema_overlay(degree=4)
 
 
 if __name__ == "__main__":
