@@ -141,7 +141,10 @@ class HU:
                 continue
             y_maxima = np.polyval(coeffs, x_maxima)
             max_value = np.max(y_maxima)
-            if max_value / min_value <= max_to_min_ratio:
+            if np.isclose(max_value, 0.0):
+                outside.append(values)
+                continue
+            if min_value / max_value <= max_to_min_ratio:
                 within.append(values)
             else:
                 outside.append(values)
