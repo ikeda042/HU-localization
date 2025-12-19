@@ -24,7 +24,7 @@ class HU:
     def plot_overlay(cls, ax: plt.Axes, series: list[list[float]], title: str) -> None:
         for values in series:
             x = range(len(values))
-            ax.plot(x, values, color="tab:blue", alpha=0.15, linewidth=2)
+            ax.plot(x, values, color="tab:blue", alpha=0.15, linewidth=1)
         ax.set_title(title)
         ax.set_xlabel("Index")
         ax.set_ylabel("8-bit brightness")
@@ -44,7 +44,7 @@ class HU:
             x = np.arange(len(values))
             coeffs = np.polyfit(x, values, degree)
             y_fit = np.polyval(coeffs, x)
-            ax.plot(x, y_fit, color="tab:orange", alpha=0.35, linewidth=2)
+            ax.plot(x, y_fit, color="tab:orange", alpha=0.35, linewidth=1)
         ax.set_title(title)
         ax.set_xlabel("Index")
         ax.set_ylabel("8-bit brightness (polyfit)")
