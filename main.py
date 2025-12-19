@@ -112,6 +112,7 @@ class HU:
         series: list[list[float]],
         degree: int,
         center_ratio: float,
+        max_to_min_ratio: float,
     ) -> tuple[list[list[float]], list[list[float]]]:
         within = []
         outside = []
@@ -120,13 +121,27 @@ class HU:
                 continue
             x = np.arange(len(values))
             coeffs = np.polyfit(x, values, degree)
-            _, x_minima = cls._polyfit_extrema_x(coeffs, 0, len(values) - 1)
+            x_maxima, x_minima = cls._polyfit_extrema_x(coeffs, 0, len(values) - 1)
             if x_minima.size == 0:
                 outside.append(values)
                 continue
             center = (len(values) - 1) / 2.0
             threshold = center_ratio * (len(values) - 1)
-            if np.any(np.abs(x_minima - center) <= threshold):
+            center_mask = np.abs(x_minima - center) <= threshold
+            if not np.any(center_mask):
+                outside.append(values)
+                continue
+            if x_maxima.size == 0:
+                outside.append(values)
+                continue
+            y_minima = np.polyval(coeffs, x_minima[center_mask])
+            min_value = np.min(y_minima)
+            if np.isclose(min_value, 0.0):
+                outside.append(values)
+                continue
+            y_maxima = np.polyval(coeffs, x_maxima)
+            max_value = np.max(y_maxima)
+            if max_value / min_value <= max_to_min_ratio:
                 within.append(values)
             else:
                 outside.append(values)
@@ -173,6 +188,7 @@ class HU:
         output_path: str = "overlay_polyfit_extrema.png",
         degree: int = 4,
         center_ratio: float = 0.15,
+        max_to_min_ratio: float = 0.7,
     ) -> None:
         series_list = [cls.read_even_lines(path) for path in data_paths]
         nrows = len(data_paths)
@@ -185,6 +201,7 @@ class HU:
                 series,
                 degree=degree,
                 center_ratio=center_ratio,
+                max_to_min_ratio=max_to_min_ratio,
             )
             within_title = f"{title} (minima within center ±{percent}%)"
             outside_title = f"{title} (minima outside center ±{percent}%)"
