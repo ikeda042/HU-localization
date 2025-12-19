@@ -206,8 +206,15 @@ class HU:
                 center_ratio=center_ratio,
                 max_to_min_ratio=max_to_min_ratio,
             )
-            within_title = f"{title} (minima within center ±{percent}%)"
-            outside_title = f"{title} (minima outside center ±{percent}%)"
+            total = len(series)
+            within_pct = 0.0 if total == 0 else (len(within) / total * 100)
+            outside_pct = 0.0 if total == 0 else (len(outside) / total * 100)
+            within_title = (
+                f"{title} (minima within center ±{percent}%) | left {within_pct:.1f}%"
+            )
+            outside_title = (
+                f"{title} (minima outside center ±{percent}%) | right {outside_pct:.1f}%"
+            )
             cls.plot_polyfit_extrema_overlay(
                 axes[row_index, 0],
                 within,
