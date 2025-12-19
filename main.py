@@ -191,7 +191,7 @@ class HU:
         output_path: str = "overlay_polyfit_extrema.png",
         degree: int = 4,
         center_ratio: float = 0.15,
-        max_to_min_ratio: float = 0.7,
+        max_to_min_ratio: float = 0.9,
     ) -> None:
         series_list = [cls.read_even_lines(path) for path in data_paths]
         nrows = len(data_paths)
