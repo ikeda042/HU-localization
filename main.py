@@ -57,22 +57,27 @@ class HU:
         x_min: float,
         x_max: float,
         tol: float = 1e-6,
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, np.ndarray]:
         deriv = np.polyder(coeffs)
         roots = np.roots(deriv)
         real_mask = np.isclose(roots.imag, 0.0, atol=1e-7)
         real_roots = roots[real_mask].real
         real_roots = real_roots[(real_roots >= x_min) & (real_roots <= x_max)]
         if real_roots.size == 0:
-            return real_roots
+            return np.array([]), np.array([])
         real_roots.sort()
         second = np.polyder(deriv)
-        extrema = []
+        maxima = []
+        minima = []
         for root in real_roots:
-            if abs(np.polyval(second, root)) <= tol:
+            curvature = np.polyval(second, root)
+            if abs(curvature) <= tol:
                 continue
-            extrema.append(root)
-        return np.array(extrema)
+            if curvature < 0:
+                maxima.append(root)
+            else:
+                minima.append(root)
+        return np.array(maxima), np.array(minima)
 
     @classmethod
     def plot_polyfit_extrema_overlay(
@@ -89,10 +94,13 @@ class HU:
             coeffs = np.polyfit(x, values, degree)
             y_fit = np.polyval(coeffs, x)
             ax.plot(x, y_fit, color="tab:orange", alpha=0.35, linewidth=1)
-            x_extrema = cls._polyfit_extrema_x(coeffs, 0, len(values) - 1)
-            if x_extrema.size:
-                y_extrema = np.polyval(coeffs, x_extrema)
-                ax.scatter(x_extrema, y_extrema, color="red", s=20, alpha=0.85, zorder=3)
+            x_maxima, x_minima = cls._polyfit_extrema_x(coeffs, 0, len(values) - 1)
+            if x_maxima.size:
+                y_maxima = np.polyval(coeffs, x_maxima)
+                ax.scatter(x_maxima, y_maxima, color="red", s=20, alpha=0.85, zorder=3)
+            if x_minima.size:
+                y_minima = np.polyval(coeffs, x_minima)
+                ax.scatter(x_minima, y_minima, color="blue", s=20, alpha=0.85, zorder=3)
         ax.set_title(title)
         ax.set_xlabel("Index")
         ax.set_ylabel("8-bit brightness (polyfit)")
